@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
+import { db } from '@/db';
 import { z } from 'zod';
 
 const createPostSchema = z.object({
@@ -17,6 +18,7 @@ interface CreatePostFormState {
 }
 
 export async function createPost(
+  slug: string,
   formState: CreatePostFormState,
   formData: FormData
 ): Promise<CreatePostFormState> {
@@ -31,14 +33,26 @@ export async function createPost(
     };
   }
 
-    const session = await auth();
-    if (!session || !session.user) {
-      return {
-        errors: {
-          _form: ['You must be signed in to do this.'],
-        },
-      };
-    }
+  const session = await auth();
+  if (!session || !session.user) {
+    return {
+      errors: {
+        _form: ['You must be signed in to do this'],
+      },
+    };
+  }
+
+  const topic = await db.topic.findFirst({
+    where: { slug },
+  });
+
+  if (!topic) {
+    return {
+      errors: {
+        _form: ['Cannot find topic'],
+      },
+    };
+  }
 
   return {
     errors: {},
